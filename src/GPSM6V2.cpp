@@ -24,6 +24,7 @@ SOFTWARE.
 */
 
 #include "GPSM6V2.h"
+#include "driver/gpio.h"
 
 static const char *TAG = "GPSM6V2";
 
@@ -37,6 +38,7 @@ GPSM6V2::GPSM6V2()
 void GPSM6V2::initialize(uart_port_t _uartPort)
 {
     uartPort = _uartPort;
+    configureUart();
 }
 
 void GPSM6V2::configureUart()
@@ -57,23 +59,30 @@ void GPSM6V2::configureUart()
         CONFIG_GPSM6V2_UART_GPIO_RX,
         CONFIG_GPSM6V2_UART_GPIO_TX,
         UART_PIN_NO_CHANGE,
-        UART_PIN_NO_CHANGE
-    ));
+        UART_PIN_NO_CHANGE));
 
     // Setup UART buffered IO with event queue
     const int uart_buffer_size = (1024);
-    QueueHandle_t uart_queue;
-    // Install UART driver using an event queue here
+
+    // Install UART driver
     ESP_ERROR_CHECK(uart_driver_install(
-        UART_NUM_2,
+        uartPort,
         CONFIG_GPSM6V2_UART_BUFFER_SIZE * 2,
         CONFIG_GPSM6V2_UART_BUFFER_SIZE * 2,
         0,
         NULL,
-        0
-    ));
+        0));
 }
 
 void GPSM6V2::update()
 {
+    uint8_t data[2049];
+    int length = 0;
+    ESP_ERROR_CHECK(uart_get_buffered_data_len(uartPort, (size_t *)&length));
+    if (length > 0)
+    {
+        length = uart_read_bytes(uartPort, data, length, 100);
+        data[length] = 0;
+        printf("UART: %s\n", data);
+    }
 }
