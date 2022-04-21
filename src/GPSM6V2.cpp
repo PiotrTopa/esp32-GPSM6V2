@@ -67,8 +67,8 @@ void GPSM6V2::configureUart()
     // Install UART driver
     ESP_ERROR_CHECK(uart_driver_install(
         uartPort,
-        CONFIG_GPSM6V2_UART_BUFFER_SIZE * 2,
-        CONFIG_GPSM6V2_UART_BUFFER_SIZE * 2,
+        (CONFIG_GPSM6V2_UART_BUFFER_SIZE)*2,
+        (CONFIG_GPSM6V2_UART_BUFFER_SIZE)*2,
         0,
         NULL,
         0));
@@ -77,12 +77,17 @@ void GPSM6V2::configureUart()
 void GPSM6V2::update()
 {
     uint8_t data[2049];
-    int length = 0;
-    ESP_ERROR_CHECK(uart_get_buffered_data_len(uartPort, (size_t *)&length));
-    if (length > 0)
+    int total = 0;
+    while (true)
     {
-        length = uart_read_bytes(uartPort, data, length, 100);
-        data[length] = 0;
-        printf("UART: %s\n", data);
+        int length = 0;
+        ESP_ERROR_CHECK(uart_get_buffered_data_len(uartPort, (size_t *)&length));
+        if (length > 0)
+        {
+            length = uart_read_bytes(uartPort, data + total, length, 100);
+        }
+        total += length;
     }
+    data[total] = 0;
+    printf("UART: %s\n", data);
 }
